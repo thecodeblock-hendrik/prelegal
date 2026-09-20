@@ -28,3 +28,14 @@ describe("nda", () => {
     expect(isComplete(defaultNdaData())).toBe(false);
   });
 });
+
+describe("nda edge cases", () => {
+  it("defaults the effective date to the local calendar date", () => {
+    expect(defaultNdaData(new Date(2026, 0, 5, 23, 30)).effectiveDate).toBe("2026-01-05");
+  });
+
+  it("renders a cleared year field as one year", () => {
+    const d = { ...defaultNdaData(), termYears: 0 };
+    expect(buildStandardTerms(d)).toContain("Expires 1 year from Effective Date.");
+  });
+});

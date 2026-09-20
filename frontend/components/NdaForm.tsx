@@ -33,7 +33,7 @@ function PartyFields({ title, party, onChange }: { title: string; party: Party; 
 
 export function NdaForm({ data, onChange }: { data: NdaData; onChange: (d: NdaData) => void }) {
   const set = <K extends keyof NdaData>(k: K, v: NdaData[K]) => onChange({ ...data, [k]: v });
-  const num = (v: string) => Math.max(1, Number.parseInt(v, 10) || 1);
+  const num = (v: string) => Math.max(0, Number.parseInt(v, 10) || 0);
 
   return (
     <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
@@ -49,7 +49,7 @@ export function NdaForm({ data, onChange }: { data: NdaData; onChange: (d: NdaDa
         <div className="flex items-center gap-2 text-sm">
           <input type="radio" id="t1" checked={data.termChoice === "expires"} onChange={() => set("termChoice", "expires")} />
           <label htmlFor="t1">Expires</label>
-          <input type="number" min={1} aria-label="Term years" className={`${input} !w-20`} value={data.termYears} onChange={(e) => set("termYears", num(e.target.value))} />
+          <input type="number" min={1} aria-label="Term years" className={`${input} !w-20`} value={data.termYears || ""} onChange={(e) => set("termYears", num(e.target.value))} />
           <span>year(s) from Effective Date</span>
         </div>
         <div className="flex items-center gap-2 text-sm">
@@ -62,7 +62,7 @@ export function NdaForm({ data, onChange }: { data: NdaData; onChange: (d: NdaDa
         <legend className="text-sm font-medium text-zinc-800">Term of confidentiality</legend>
         <div className="flex items-center gap-2 text-sm">
           <input type="radio" id="c1" checked={data.confidentialityChoice === "years"} onChange={() => set("confidentialityChoice", "years")} />
-          <input type="number" min={1} aria-label="Confidentiality years" className={`${input} !w-20`} value={data.confidentialityYears} onChange={(e) => set("confidentialityYears", num(e.target.value))} />
+          <input type="number" min={1} aria-label="Confidentiality years" className={`${input} !w-20`} value={data.confidentialityYears || ""} onChange={(e) => set("confidentialityYears", num(e.target.value))} />
           <label htmlFor="c1">year(s) from Effective Date (trade secrets protected longer)</label>
         </div>
         <div className="flex items-center gap-2 text-sm">

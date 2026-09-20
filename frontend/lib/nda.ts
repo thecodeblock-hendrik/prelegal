@@ -26,10 +26,15 @@ export interface NdaData {
 
 const emptyParty: Party = { name: "", title: "", company: "", noticeAddress: "" };
 
+function localIsoDate(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export function defaultNdaData(today: Date = new Date()): NdaData {
   return {
     purpose: "Evaluating whether to enter into a business relationship with the other party.",
-    effectiveDate: today.toISOString().slice(0, 10),
+    effectiveDate: localIsoDate(today),
     termChoice: "expires",
     termYears: 1,
     confidentialityChoice: "years",
@@ -45,7 +50,11 @@ export function defaultNdaData(today: Date = new Date()): NdaData {
 const blank = "________";
 const orBlank = (value: string) => value.trim() || blank;
 
-const plural = (n: number) => `${n} year${n === 1 ? "" : "s"}`;
+// A cleared number input is stored as 0 while editing; render it as at least 1 year.
+const plural = (n: number) => {
+  const years = Math.max(1, n);
+  return `${years} year${years === 1 ? "" : "s"}`;
+};
 
 export function formatDate(iso: string): string {
   const date = new Date(`${iso}T00:00:00`);
