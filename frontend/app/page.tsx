@@ -1,37 +1,36 @@
 "use client";
 
-import { useState } from "react";
-import { NdaForm } from "@/components/NdaForm";
-import { NdaPreview } from "@/components/NdaPreview";
-import { defaultNdaData, isComplete, NdaData } from "@/lib/nda";
-import { generateNdaPdf } from "@/lib/pdf";
+import { useRouter } from "next/navigation";
 
-export default function Home() {
-  const [data, setData] = useState<NdaData>(() => defaultNdaData());
-  const complete = isComplete(data);
+/** Placeholder login: accepts any input and enters the platform. Real auth comes later. */
+export default function LoginPage() {
+  const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-zinc-100">
-      <header className="border-b bg-white px-6 py-4">
-        <h1 className="text-xl font-semibold text-zinc-900">Prelegal &middot; Mutual NDA Creator</h1>
-      </header>
-      <main className="mx-auto grid max-w-7xl gap-6 p-6 lg:grid-cols-[minmax(0,26rem)_1fr]">
-        <section className="space-y-4 rounded-lg bg-white p-5 shadow lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:self-start lg:overflow-y-auto">
-          <NdaForm data={data} onChange={setData} />
-          <button
-            type="button"
-            disabled={!complete}
-            onClick={() => generateNdaPdf(data).save("Mutual-NDA.pdf")}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
-          >
-            Download PDF
-          </button>
-          {!complete && <p className="text-xs text-zinc-500">Fill in all fields marked * to enable download.</p>}
-        </section>
-        <section aria-label="Document preview">
-          <NdaPreview data={data} />
-        </section>
-      </main>
+    <div className="flex min-h-screen items-center justify-center bg-zinc-100 p-6">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          router.push("/nda/");
+        }}
+        className="w-full max-w-sm space-y-4 rounded-lg border-t-4 border-accent bg-white p-6 shadow"
+      >
+        <div>
+          <h1 className="text-2xl font-semibold text-navy">Prelegal</h1>
+          <p className="text-sm text-muted">Sign in to draft your agreements.</p>
+        </div>
+        <label className="block text-sm font-medium text-navy">
+          Email
+          <input type="email" name="email" className="mt-1 w-full rounded-md border px-3 py-2 focus:outline-primary" />
+        </label>
+        <label className="block text-sm font-medium text-navy">
+          Password
+          <input type="password" name="password" className="mt-1 w-full rounded-md border px-3 py-2 focus:outline-primary" />
+        </label>
+        <button type="submit" className="w-full rounded-md bg-secondary px-4 py-2 font-medium text-white hover:opacity-90">
+          Sign in
+        </button>
+      </form>
     </div>
   );
 }
