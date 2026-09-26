@@ -3,12 +3,25 @@
 import os
 from contextlib import asynccontextmanager
 
+from dotenv import find_dotenv, load_dotenv
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from app.chat import ChatRequest, ChatResponse, reply
 from app.db import init_db
 
+load_dotenv(find_dotenv())
+
 STATIC_DIR = os.environ.get("STATIC_DIR", "static")
+
+
+class FrontendFiles(StaticFiles):
+    """Static frontend whose files browsers must revalidate, so a redeploy shows immediately."""
+
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
 
 
 @asynccontextmanager
@@ -27,4 +40,10 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-app.mount("/", StaticFiles(directory=STATIC_DIR, html=True, check_dir=False), name="frontend")
+@app.post("/api/chat")
+def chat(request: ChatRequest) -> ChatResponse:
+    """Continue the NDA drafting conversation."""
+    return reply(request)
+
+
+app.mount("/", FrontendFiles(directory=STATIC_DIR, html=True, check_dir=False), name="frontend")
