@@ -1,8 +1,9 @@
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app import db
-from app.main import app
+from app.main import FrontendFiles, app
 
 
 @pytest.fixture(autouse=True)
@@ -28,3 +29,11 @@ def test_init_db_starts_from_scratch():
     db.init_db()
     with db.connect() as conn:
         assert conn.execute("SELECT COUNT(*) FROM users").fetchone() == (0,)
+
+
+def test_frontend_files_require_revalidation(tmp_path):
+    (tmp_path / "index.html").write_text("<p>hi</p>")
+    frontend = FastAPI()
+    frontend.mount("/", FrontendFiles(directory=tmp_path, html=True))
+    response = TestClient(frontend).get("/")
+    assert response.headers["cache-control"] == "no-cache"

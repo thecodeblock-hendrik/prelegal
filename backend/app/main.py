@@ -15,6 +15,15 @@ load_dotenv(find_dotenv())
 STATIC_DIR = os.environ.get("STATIC_DIR", "static")
 
 
+class FrontendFiles(StaticFiles):
+    """Static frontend whose files browsers must revalidate, so a redeploy shows immediately."""
+
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Create a fresh database when the server starts."""
@@ -37,4 +46,4 @@ def chat(request: ChatRequest) -> ChatResponse:
     return reply(request)
 
 
-app.mount("/", StaticFiles(directory=STATIC_DIR, html=True, check_dir=False), name="frontend")
+app.mount("/", FrontendFiles(directory=STATIC_DIR, html=True, check_dir=False), name="frontend")
