@@ -12,7 +12,9 @@ export function NdaChat({ data, onChange }: { data: NdaData; onChange: (d: NdaDa
   const [error, setError] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, pending]);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, pending]);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
