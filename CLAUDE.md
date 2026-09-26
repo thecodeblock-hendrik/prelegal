@@ -8,8 +8,6 @@ The available documents are covered in the catalog.json file in the project root
 
 @catalog.json
 
-The current implementation is the v1 foundation: a FastAPI backend serving a statically built Next.js frontend from one Docker container, with a fake login and the Mutual NDA creator. AI chat, real authentication and the other document types are not built yet.
-
 ## Development process
 
 When instructed to build a feature:
@@ -26,12 +24,11 @@ There is an OPENROUTER_API_KEY in the .env file in the project root.
 
 ## Technical design
 
-The entire project should be packaged into a Docker container.  
-The backend should be in backend/ and be a uv project, using FastAPI.  
-The frontend should be in frontend/  
-The database should use SQLLite and be created from scratch each time the Docker container is brought up, allowing for a users table with sign up and sign in.  
-Consider statically building the frontend and serving it via FastAPI, if that will work.  
-There should be scripts in scripts/ for:  
+The entire project is packaged into a single multi-stage Docker container.  
+The backend is in backend/ and is a uv project, using FastAPI.  
+The frontend is in frontend/ and is a Next.js app, statically exported and served by FastAPI.  
+The database uses SQLite and is created from scratch each time the container starts, with a users table for sign up and sign in.  
+There are scripts in scripts/ for:  
 ```bash
 # Mac
 scripts/start-mac.sh    # Start
@@ -53,3 +50,18 @@ Backend available at http://localhost:8000
 - Purple Secondary: `#753991` (submit buttons)
 - Dark Navy: `#032147` (headings)
 - Gray Text: `#888888`
+
+## Implementation status
+
+v1 foundation is complete (KAN-4, KAN-5, KAN-6):
+- `templates/` holds the Common Paper markdown templates listed in catalog.json.
+- Frontend: fake login at `/` (accepts any input, no backend call) that routes to the Mutual NDA creator at `/nda/`, with a form, live preview and PDF download (jsPDF). Logic in `frontend/lib/`, tests via `npm test` (vitest).
+- Backend: `backend/app/main.py` serves `/api/health` and mounts the static frontend; `backend/app/db.py` recreates the SQLite users table on startup. Tests via `uv run pytest`.
+- Docker: Node stage builds the frontend, uv Python stage runs uvicorn on port 8000; start scripts pass `.env` to the container.
+
+AI chat for the Mutual NDA is complete (KAN-7):
+- `/nda/` replaces the form with `NdaChat`: a freeform chat whose answers fill the live preview.
+- `POST /api/chat` (`backend/app/chat.py`) is stateless: it takes the message history and current NDA values, and returns a reply plus nullable field updates via Structured Outputs. The frontend merges non-null values with `applyUpdate` in `frontend/lib/chat.ts`.
+- `next dev` has no `/api` proxy; test the chat by serving `frontend/out` from FastAPI (`STATIC_DIR=../frontend/out uv run uvicorn app.main:app`).
+
+Not built yet: real sign up / sign in endpoints, and document types other than the Mutual NDA.

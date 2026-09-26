@@ -3,10 +3,14 @@
 import os
 from contextlib import asynccontextmanager
 
+from dotenv import find_dotenv, load_dotenv
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from app.chat import ChatRequest, ChatResponse, reply
 from app.db import init_db
+
+load_dotenv(find_dotenv())
 
 STATIC_DIR = os.environ.get("STATIC_DIR", "static")
 
@@ -25,6 +29,12 @@ app = FastAPI(title="Prelegal", lifespan=lifespan)
 def health() -> dict[str, str]:
     """Report that the backend is running."""
     return {"status": "ok"}
+
+
+@app.post("/api/chat")
+def chat(request: ChatRequest) -> ChatResponse:
+    """Continue the NDA drafting conversation."""
+    return reply(request)
 
 
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True, check_dir=False), name="frontend")
