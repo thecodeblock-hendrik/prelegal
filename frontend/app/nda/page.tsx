@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { NdaForm } from "@/components/NdaForm";
+import { NdaChat } from "@/components/NdaChat";
 import { NdaPreview } from "@/components/NdaPreview";
 import { defaultNdaData, isComplete, NdaData } from "@/lib/nda";
 import { generateNdaPdf } from "@/lib/pdf";
@@ -16,8 +16,10 @@ export default function NdaPage() {
         <h1 className="text-xl font-semibold text-zinc-900">Prelegal &middot; Mutual NDA Creator</h1>
       </header>
       <main className="mx-auto grid max-w-7xl gap-6 p-6 lg:grid-cols-[minmax(0,26rem)_1fr]">
-        <section className="space-y-4 rounded-lg bg-white p-5 shadow lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:self-start lg:overflow-y-auto">
-          <NdaForm data={data} onChange={setData} />
+        <section className="flex flex-col gap-4 rounded-lg bg-white p-5 shadow lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:self-start">
+          <div className="min-h-0 flex-1">
+            <NdaChat data={data} onChange={setData} />
+          </div>
           <button
             type="button"
             disabled={!complete}
@@ -26,7 +28,7 @@ export default function NdaPage() {
           >
             Download PDF
           </button>
-          {!complete && <p className="text-xs text-zinc-500">Fill in all fields marked * to enable download.</p>}
+          {!complete && <p className="text-xs text-zinc-500">Download unlocks once the purpose, governing law, jurisdiction and both company names are filled in.</p>}
         </section>
         <section aria-label="Document preview">
           <NdaPreview data={data} />
