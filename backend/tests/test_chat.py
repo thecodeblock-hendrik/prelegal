@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import chat
+from app.documents import DOCUMENTS
 from app.main import app
 
 ACME = {"company": "Acme", "name": None, "title": None, "noticeAddress": None}
@@ -81,8 +82,8 @@ def test_prompt_lists_catalog_until_a_document_is_chosen():
     )
     messages = chat.build_messages(request)
     system = messages[0]["content"]
-    assert "- csa: Cloud Service Agreement" in system
-    assert "- mutual-nda: Mutual Non-Disclosure Agreement" in system
+    assert "- csa: Cloud Service Agreement (Provider and Customer)" in system
+    assert "- mutual-nda: Mutual Non-Disclosure Agreement (Party 1 and Party 2)" in system
     assert "closest supported document" in system
     assert "The selected document" not in system
     assert messages[1:] == [{"role": "assistant", "content": "Hello"}, {"role": "user", "content": "Hi"}]
@@ -96,9 +97,31 @@ def test_prompt_describes_the_chosen_document_and_current_values():
     )
     system = chat.build_messages(request)[0]["content"]
     assert "The selected document is the Service Level Agreement." in system
-    assert "party1 is the Provider and party2 is the Customer" in system
-    assert "- Target Uptime" in system
+    assert "party1 is the Provider and party2" in system
+    assert "- Provider company name\n- Customer company name\n- Subscription Period" in system
+    assert "- Target Uptime\n" not in system
     assert '"Target Uptime": "99.9%"' in system
+
+
+def test_remaining_sections_follow_interview_order():
+    sla = DOCUMENTS["sla"]
+    fields = chat.Fields(
+        variables={v: "Not applicable" for v in sla.variables[1:]},
+        party1={"company": "Acme", "name": "Jane", "title": ""},
+        party2={"company": "Globex", "name": "Sam", "title": "CEO", "noticeAddress": "sam@globex.com"},
+    )
+    assert chat.remaining_sections(sla, fields) == [
+        sla.variables[0],
+        "Provider signer name, title and notice address (email or postal)",
+    ]
+
+
+def test_prompt_says_when_every_section_is_complete():
+    nda = DOCUMENTS["mutual-nda"]
+    party = {"company": "Acme", "name": "Jane", "title": "CEO", "noticeAddress": "jane@acme.com"}
+    fields = chat.Fields(variables={v: "x" for v in nda.variables}, party1=party, party2=party)
+    assert chat.remaining_sections(nda, fields) == []
+    assert "(none, all sections are complete)" in chat.document_prompt(nda, fields)
 
 
 def test_chat_rejects_unknown_document_and_invalid_role():

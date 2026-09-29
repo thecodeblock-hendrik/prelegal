@@ -46,6 +46,19 @@ export function isComplete(draft: Draft): boolean {
   return draft.documentId !== null && [draft.party1.company, draft.party2.company].every((c) => c.trim() !== "");
 }
 
+const filled = (value: string | undefined) => Boolean(value?.trim());
+
+/** How many sections are filled: companies, variables, then each party's signer details (as the chat asks). */
+export function sectionProgress(document: DocumentDef, draft: Draft): { done: number; total: number } {
+  const parties = [draft.party1, draft.party2];
+  const sections = [
+    ...parties.map((p) => filled(p.company)),
+    ...document.variables.map((name) => filled(draft.variables[name])),
+    ...parties.map((p) => filled(p.name) && filled(p.title) && filled(p.noticeAddress)),
+  ];
+  return { done: sections.filter(Boolean).length, total: sections.length };
+}
+
 /** Turns the templates' spans into markdown: bold clause headings, italic variables, other tags dropped. */
 export function highlightTerms(markdown: string): string {
   return markdown

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BLANK, emptyDraft, fetchDocuments, highlightTerms, isComplete, toPlainText, variableValue } from "./documents";
+import { BLANK, emptyDraft, fetchDocuments, highlightTerms, isComplete, sectionProgress, toPlainText, variableValue } from "./documents";
 import { SLA } from "./testing/fixtures";
 
 describe("documents", () => {
@@ -24,6 +24,18 @@ describe("documents", () => {
     expect(isComplete(named)).toBe(false);
     expect(isComplete({ ...named, documentId: "sla" })).toBe(true);
     expect(isComplete({ ...named, documentId: "sla", party2: { ...named.party2, company: " " } })).toBe(false);
+  });
+
+  it("counts filled sections: companies, variables, then each party's signer details", () => {
+    expect(sectionProgress(SLA, emptyDraft())).toEqual({ done: 0, total: 6 });
+    const draft = {
+      ...emptyDraft(),
+      variables: { "Target Uptime": "99.9%", "Support Channel": "Not applicable" },
+      party1: { name: "Jane", title: "", company: "Acme", noticeAddress: "jane@acme.com" },
+    };
+    expect(sectionProgress(SLA, draft)).toEqual({ done: 3, total: 6 });
+    const signed = { ...draft, party1: { ...draft.party1, title: "CEO" } };
+    expect(sectionProgress(SLA, signed)).toEqual({ done: 4, total: 6 });
   });
 
   it("turns spans into bold headings and italic variables", () => {

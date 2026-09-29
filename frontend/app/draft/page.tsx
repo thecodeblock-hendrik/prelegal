@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { DocumentChat } from "@/components/DocumentChat";
 import { DocumentPreview } from "@/components/DocumentPreview";
-import { DocumentDef, Draft, emptyDraft, fetchDocuments, isComplete } from "@/lib/documents";
+import { DocumentDef, Draft, emptyDraft, fetchDocuments, isComplete, sectionProgress } from "@/lib/documents";
 import { generateDocumentPdf } from "@/lib/pdf";
 
 export default function DraftPage() {
@@ -11,6 +11,7 @@ export default function DraftPage() {
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const document = documents.find((d) => d.id === draft.documentId);
   const complete = isComplete(draft) && document !== undefined;
+  const progress = document && sectionProgress(document, draft);
 
   useEffect(() => {
     fetchDocuments().then(setDocuments);
@@ -36,6 +37,11 @@ export default function DraftPage() {
           >
             Download PDF
           </button>
+          {progress && (
+            <p className="text-xs font-medium text-navy">
+              {progress.done} of {progress.total} sections complete
+            </p>
+          )}
           {!complete && <p className="text-xs text-zinc-500">Download unlocks once a document is chosen and both party company names are filled in.</p>}
         </section>
         <section aria-label="Document preview">
