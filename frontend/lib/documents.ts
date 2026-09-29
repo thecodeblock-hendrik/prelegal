@@ -59,6 +59,14 @@ export function sectionProgress(document: DocumentDef, draft: Draft): { done: nu
   return { done: sections.filter(Boolean).length, total: sections.length };
 }
 
+/** The first cover page section an update changed: a variable name, "parties", or null if nothing changed. */
+export function changedSection(document: DocumentDef, before: Draft, after: Draft): string | null {
+  const variable = document.variables.find((name) => before.variables[name] !== after.variables[name]);
+  if (variable) return variable;
+  const parties = (d: Draft) => JSON.stringify([d.party1, d.party2]);
+  return parties(before) !== parties(after) ? "parties" : null;
+}
+
 /** Turns the templates' spans into markdown: bold clause headings, italic variables, other tags dropped. */
 export function highlightTerms(markdown: string): string {
   return markdown

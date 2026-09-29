@@ -73,6 +73,7 @@ def test_chat_uses_cerebras_structured_output(monkeypatch):
     assert call["model"] == chat.MODEL
     assert call["response_format"] is chat.ChatResponse
     assert call["extra_body"] == {"provider": {"order": ["cerebras"]}}
+    assert call["max_tokens"] == chat.MAX_TOKENS
 
 
 def test_prompt_lists_catalog_until_a_document_is_chosen():

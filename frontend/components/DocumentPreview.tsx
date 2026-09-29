@@ -1,5 +1,16 @@
+import { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import { DocumentDef, Draft, highlightTerms, variableValue } from "@/lib/documents";
+import { changedSection, DocumentDef, Draft, highlightTerms, variableValue } from "@/lib/documents";
+
+/** Scrolls the page just enough to show the cover page section the latest update filled in. */
+function useFollowChanges(document: DocumentDef | undefined, draft: Draft) {
+  const previous = useRef(draft);
+  useEffect(() => {
+    const section = document && changedSection(document, previous.current, draft);
+    previous.current = draft;
+    if (section) window.document.getElementById(`section-${section}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [document, draft]);
+}
 
 function SupportedDocuments({ documents }: { documents: DocumentDef[] }) {
   return (
@@ -18,6 +29,7 @@ function SupportedDocuments({ documents }: { documents: DocumentDef[] }) {
 }
 
 export function DocumentPreview({ document, documents, draft }: { document?: DocumentDef; documents: DocumentDef[]; draft: Draft }) {
+  useFollowChanges(document, draft);
   if (!document) return <SupportedDocuments documents={documents} />;
 
   const [role1, role2] = document.parties;
@@ -38,13 +50,13 @@ export function DocumentPreview({ document, documents, draft }: { document?: Doc
         this Cover Page define the capitalized terms used in the standard terms and control over any conflict with them.
       </p>
       {document.variables.map((name) => (
-        <div key={name}>
+        <div key={name} id={`section-${name}`}>
           <h3 className="font-semibold">{name}</h3>
           <p className="whitespace-pre-wrap">{variableValue(draft, name)}</p>
         </div>
       ))}
       <p>By signing this Cover Page, each party agrees to enter into this {document.name}.</p>
-      <table className="w-full border-collapse text-left">
+      <table id="section-parties" className="w-full border-collapse text-left">
         <thead>
           <tr>
             <th className="border p-2" />

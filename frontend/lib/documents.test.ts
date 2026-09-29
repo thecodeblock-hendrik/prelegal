@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BLANK, emptyDraft, fetchDocuments, highlightTerms, isComplete, sectionProgress, toPlainText, variableValue } from "./documents";
+import { BLANK, changedSection, emptyDraft, fetchDocuments, highlightTerms, isComplete, sectionProgress, toPlainText, variableValue } from "./documents";
 import { SLA } from "./testing/fixtures";
 
 describe("documents", () => {
@@ -36,6 +36,16 @@ describe("documents", () => {
     expect(sectionProgress(SLA, draft)).toEqual({ done: 3, total: 6 });
     const signed = { ...draft, party1: { ...draft.party1, title: "CEO" } };
     expect(sectionProgress(SLA, signed)).toEqual({ done: 4, total: 6 });
+  });
+
+  it("finds the first cover page section an update changed", () => {
+    const before = { ...emptyDraft(), variables: { "Target Uptime": "99%" } };
+    const variable = { ...before, variables: { "Target Uptime": "99%", "Support Channel": "Email" } };
+    const party = { ...before, party2: { ...before.party2, company: "Globex" } };
+    expect(changedSection(SLA, before, variable)).toBe("Support Channel");
+    expect(changedSection(SLA, before, party)).toBe("parties");
+    expect(changedSection(SLA, before, before)).toBeNull();
+    expect(changedSection(SLA, before, { ...before, party1: { ...before.party1 } })).toBeNull();
   });
 
   it("turns spans into bold headings and italic variables", () => {

@@ -10,10 +10,11 @@ export function DocumentChat({ draft, onChange }: { draft: Draft; onChange: (d: 
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const endRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    const list = listRef.current;
+    list?.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
   }, [messages, pending]);
 
   async function submit(event: React.FormEvent) {
@@ -40,7 +41,7 @@ export function DocumentChat({ draft, onChange }: { draft: Draft; onChange: (d: 
 
   return (
     <div className="flex h-[32rem] flex-col lg:h-full">
-      <div className="flex-1 space-y-3 overflow-y-auto pr-1" aria-live="polite">
+      <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto pr-1" aria-live="polite">
         {messages.map((m, i) => (
           <p
             key={i}
@@ -52,7 +53,6 @@ export function DocumentChat({ draft, onChange }: { draft: Draft; onChange: (d: 
           </p>
         ))}
         {pending && <p className="text-sm text-muted">Thinking...</p>}
-        <div ref={endRef} />
       </div>
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
       <form onSubmit={submit} className="mt-3 flex gap-2">

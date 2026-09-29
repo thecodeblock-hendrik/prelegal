@@ -9,6 +9,9 @@ from app.documents import DOCUMENTS, Document
 
 MODEL = "openrouter/openai/gpt-oss-120b"
 EXTRA_BODY = {"provider": {"order": ["cerebras"]}}
+# Replies are a few hundred tokens. Without a cap OpenRouter reserves Cerebras's 40k default
+# against the account's credit and, when that is short, silently falls back to a slower provider.
+MAX_TOKENS = 2000
 
 SYSTEM_PROMPT = """You are a friendly legal assistant helping the user draft a legal agreement \
 from the Common Paper templates. Hold a natural conversation in plain language, asking one or \
@@ -161,6 +164,7 @@ def reply(request: ChatRequest) -> ChatResponse:
         messages=build_messages(request),
         response_format=ChatResponse,
         reasoning_effort="low",
+        max_tokens=MAX_TOKENS,
         extra_body=EXTRA_BODY,
     )
     parsed = ChatResponse.model_validate_json(response.choices[0].message.content)
