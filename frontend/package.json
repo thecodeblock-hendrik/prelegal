@@ -7,10 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "copy-templates": "node scripts/copy-templates.mjs",
-    "predev": "npm run copy-templates",
-    "prebuild": "npm run copy-templates",
-    "pretest": "npm run copy-templates",
     "test": "vitest run"
   },
   "dependencies": {

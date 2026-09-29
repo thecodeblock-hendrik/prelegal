@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.chat import ChatRequest, ChatResponse, reply
 from app.db import init_db
+from app.documents import DOCUMENTS, Document
 
 load_dotenv(find_dotenv())
 
@@ -40,9 +41,15 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/api/documents")
+def documents() -> list[Document]:
+    """List the supported documents with their parties, variables and standard terms."""
+    return list(DOCUMENTS.values())
+
+
 @app.post("/api/chat")
 def chat(request: ChatRequest) -> ChatResponse:
-    """Continue the NDA drafting conversation."""
+    """Continue the document drafting conversation."""
     return reply(request)
 
 

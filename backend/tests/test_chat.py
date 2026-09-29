@@ -6,19 +6,7 @@ from fastapi.testclient import TestClient
 from app import chat
 from app.main import app
 
-EMPTY_UPDATE = {
-    "purpose": None,
-    "effectiveDate": None,
-    "termChoice": None,
-    "termYears": None,
-    "confidentialityChoice": None,
-    "confidentialityYears": None,
-    "governingLaw": None,
-    "jurisdiction": None,
-    "modifications": None,
-    "party1": None,
-    "party2": None,
-}
+ACME = {"company": "Acme", "name": None, "title": None, "noticeAddress": None}
 
 
 @pytest.fixture(autouse=True)
@@ -26,13 +14,11 @@ def temp_db(tmp_path, monkeypatch):
     monkeypatch.setenv("DB_PATH", str(tmp_path / "test.db"))
 
 
-@pytest.fixture
-def fake_llm(monkeypatch):
+def fake_llm(monkeypatch, **response):
     """Replace the LLM call with a canned structured response and record its arguments."""
     calls = []
     content = chat.ChatResponse(
-        reply="Which state's law should govern?",
-        fields={**EMPTY_UPDATE, "party1": {"company": "Acme", "name": None, "title": None, "noticeAddress": None}},
+        **{"reply": "Hi", "documentId": None, "variables": [], "party1": None, "party2": None, **response}
     ).model_dump_json()
 
     def fake_completion(**kwargs):
@@ -43,39 +29,87 @@ def fake_llm(monkeypatch):
     return calls
 
 
-def test_chat_returns_reply_and_fields(fake_llm):
-    body = {"messages": [{"role": "user", "content": "I'm at Acme"}], "fields": {"governingLaw": ""}}
+def post_chat(body: dict):
     with TestClient(app) as client:
-        response = client.post("/api/chat", json=body)
+        return client.post("/api/chat", json=body)
+
+
+def test_chat_returns_reply_document_and_values(monkeypatch):
+    fake_llm(
+        monkeypatch,
+        reply="Which state's law should govern?",
+        documentId="csa",
+        variables=[{"name": "Governing Law", "value": "Delaware"}],
+        party1=ACME,
+    )
+    response = post_chat({"messages": [{"role": "user", "content": "A SaaS deal with Acme"}], "fields": {}})
     assert response.status_code == 200
     data = response.json()
     assert data["reply"] == "Which state's law should govern?"
-    assert data["fields"]["party1"]["company"] == "Acme"
-    assert data["fields"]["governingLaw"] is None
+    assert data["documentId"] == "csa"
+    assert data["variables"] == [{"name": "Governing Law", "value": "Delaware"}]
+    assert data["party1"]["company"] == "Acme"
 
 
-def test_chat_uses_cerebras_structured_output(fake_llm):
-    body = {"messages": [{"role": "user", "content": "hi"}], "fields": {}}
-    with TestClient(app) as client:
-        client.post("/api/chat", json=body)
-    call = fake_llm[0]
+def test_chat_drops_variables_the_document_does_not_have(monkeypatch):
+    fake_llm(
+        monkeypatch,
+        variables=[{"name": "Purpose", "value": "Hiring"}, {"name": "Made Up", "value": "x"}],
+    )
+    body = {"messages": [{"role": "user", "content": "Hiring"}], "documentId": "mutual-nda", "fields": {}}
+    assert post_chat(body).json()["variables"] == [{"name": "Purpose", "value": "Hiring"}]
+
+
+def test_chat_drops_variables_before_a_document_is_chosen(monkeypatch):
+    fake_llm(monkeypatch, variables=[{"name": "Purpose", "value": "Hiring"}])
+    assert post_chat({"messages": [{"role": "user", "content": "hi"}], "fields": {}}).json()["variables"] == []
+
+
+def test_chat_uses_cerebras_structured_output(monkeypatch):
+    calls = fake_llm(monkeypatch)
+    post_chat({"messages": [{"role": "user", "content": "hi"}], "fields": {}})
+    call = calls[0]
     assert call["model"] == chat.MODEL
     assert call["response_format"] is chat.ChatResponse
     assert call["extra_body"] == {"provider": {"order": ["cerebras"]}}
 
 
-def test_build_messages_includes_current_values():
+def test_prompt_lists_catalog_until_a_document_is_chosen():
     request = chat.ChatRequest(
         messages=[{"role": "assistant", "content": "Hello"}, {"role": "user", "content": "Hi"}],
-        fields={"governingLaw": "Delaware"},
+        fields={"variables": {}},
     )
     messages = chat.build_messages(request)
-    assert messages[0]["role"] == "system"
-    assert '"governingLaw": "Delaware"' in messages[0]["content"]
+    system = messages[0]["content"]
+    assert "- csa: Cloud Service Agreement" in system
+    assert "- mutual-nda: Mutual Non-Disclosure Agreement" in system
+    assert "closest supported document" in system
+    assert "The selected document" not in system
     assert messages[1:] == [{"role": "assistant", "content": "Hello"}, {"role": "user", "content": "Hi"}]
 
 
-def test_chat_rejects_invalid_role():
-    body = {"messages": [{"role": "system", "content": "x"}], "fields": {}}
+def test_prompt_describes_the_chosen_document_and_current_values():
+    request = chat.ChatRequest(
+        messages=[{"role": "user", "content": "Hi"}],
+        documentId="sla",
+        fields={"variables": {"Target Uptime": "99.9%"}},
+    )
+    system = chat.build_messages(request)[0]["content"]
+    assert "The selected document is the Service Level Agreement." in system
+    assert "party1 is the Provider and party2 is the Customer" in system
+    assert "- Target Uptime" in system
+    assert '"Target Uptime": "99.9%"' in system
+
+
+def test_chat_rejects_unknown_document_and_invalid_role():
+    unknown = {"messages": [], "documentId": "lease", "fields": {}}
+    bad_role = {"messages": [{"role": "system", "content": "x"}], "fields": {}}
+    assert post_chat(unknown).status_code == 422
+    assert post_chat(bad_role).status_code == 422
+
+
+def test_documents_endpoint_lists_supported_documents():
     with TestClient(app) as client:
-        assert client.post("/api/chat", json=body).status_code == 422
+        documents = client.get("/api/documents").json()
+    assert len(documents) == 11
+    assert {"id", "name", "description", "parties", "variables", "body"} <= documents[0].keys()

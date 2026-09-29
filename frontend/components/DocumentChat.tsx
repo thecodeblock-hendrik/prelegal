@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { applyUpdate, ChatMessage, GREETING, sendChat } from "@/lib/chat";
-import { NdaData } from "@/lib/nda";
+import { Draft } from "@/lib/documents";
 
-/** Freeform AI chat that fills in the NDA as the user answers. */
-export function NdaChat({ data, onChange }: { data: NdaData; onChange: (d: NdaData) => void }) {
+/** Freeform AI chat that picks the document and fills it in as the user answers. */
+export function DocumentChat({ draft, onChange }: { draft: Draft; onChange: (d: Draft) => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
@@ -26,9 +26,9 @@ export function NdaChat({ data, onChange }: { data: NdaData; onChange: (d: NdaDa
     setPending(true);
     setError("");
     try {
-      const result = await sendChat(history, data);
+      const result = await sendChat(history, draft);
       setMessages([...history, { role: "assistant", content: result.reply }]);
-      onChange(applyUpdate(data, result.fields));
+      onChange(applyUpdate(draft, result));
     } catch {
       setError("Something went wrong. Please try again.");
       setMessages(messages);
