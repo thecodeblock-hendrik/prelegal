@@ -64,11 +64,11 @@ describe("documents", () => {
   it("fetches the supported documents", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [SLA] }));
     expect(await fetchDocuments()).toEqual([SLA]);
-    expect(vi.mocked(fetch)).toHaveBeenCalledWith("/api/documents");
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe("/api/documents");
   });
 
   it("throws when the documents request fails", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500 }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) }));
     await expect(fetchDocuments()).rejects.toThrow("500");
   });
 });

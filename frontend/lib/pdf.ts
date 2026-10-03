@@ -1,9 +1,10 @@
 import { jsPDF } from "jspdf";
-import { DocumentDef, Draft, toPlainText, variableValue } from "./documents";
+import { DISCLAIMER, DocumentDef, Draft, toPlainText, variableValue } from "./documents";
 
 const MARGIN = 54;
 const LINE = 14;
 const INDENT = 14;
+export const FOOTER = "Draft - subject to legal review. Not legal advice.";
 
 export function generateDocumentPdf(document: DocumentDef, draft: Draft): jsPDF {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
@@ -29,7 +30,8 @@ export function generateDocumentPdf(document: DocumentDef, draft: Draft): jsPDF 
     y += opts.gap ?? 4;
   };
 
-  text(document.name, { size: 18, bold: true, gap: 10 });
+  text(document.name, { size: 18, bold: true, gap: 4 });
+  text(DISCLAIMER, { size: 9, gap: 12 });
   text("Cover Page", { size: 13, bold: true });
   text(
     `This ${document.name} consists of this Cover Page and the Common Paper standard terms that follow. The values on this Cover Page define the capitalized terms used in the standard terms and control over any conflict with them.`,
@@ -73,5 +75,19 @@ export function generateDocumentPdf(document: DocumentDef, draft: Draft): jsPDF 
     else if (line.trim()) text(line.trim(), { indent: (line.search(/\S/) / 4) * INDENT, gap: 6 });
   }
 
+  addFooters(doc);
   return doc;
+}
+
+/** Marks every page as a draft subject to legal review. */
+function addFooters(doc: jsPDF) {
+  const pages = doc.getNumberOfPages();
+  const height = doc.internal.pageSize.getHeight();
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(136);
+  for (let page = 1; page <= pages; page++) {
+    doc.setPage(page);
+    doc.text(`${FOOTER}    Page ${page} of ${pages}`, MARGIN, height - MARGIN / 2);
+  }
 }

@@ -1,12 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { applyUpdate, ChatMessage, GREETING, sendChat } from "@/lib/chat";
+import { applyUpdate, ChatMessage, sendChat } from "@/lib/chat";
 import { Draft } from "@/lib/documents";
 
+interface Props {
+  draft: Draft;
+  initialMessages: ChatMessage[];
+  /** Called after each successful reply; input stays locked until it resolves so saves never overlap. */
+  onTurn: (messages: ChatMessage[], draft: Draft) => Promise<void>;
+}
+
 /** Freeform AI chat that picks the document and fills it in as the user answers. */
-export function DocumentChat({ draft, onChange }: { draft: Draft; onChange: (d: Draft) => void }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
+export function DocumentChat({ draft, initialMessages, onTurn }: Props) {
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -28,8 +35,9 @@ export function DocumentChat({ draft, onChange }: { draft: Draft; onChange: (d: 
     setError("");
     try {
       const result = await sendChat(history, draft);
-      setMessages([...history, { role: "assistant", content: result.reply }]);
-      onChange(applyUpdate(draft, result));
+      const all: ChatMessage[] = [...history, { role: "assistant", content: result.reply }];
+      setMessages(all);
+      await onTurn(all, applyUpdate(draft, result));
     } catch {
       setError("Something went wrong. Please try again.");
       setMessages(messages);
@@ -45,8 +53,8 @@ export function DocumentChat({ draft, onChange }: { draft: Draft; onChange: (d: 
         {messages.map((m, i) => (
           <p
             key={i}
-            className={`max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm ${
-              m.role === "user" ? "ml-auto bg-primary text-white" : "bg-zinc-100 text-zinc-900"
+            className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
+              m.role === "user" ? "ml-auto rounded-br-sm bg-primary text-white" : "rounded-bl-sm bg-slate-100 text-slate-800"
             }`}
           >
             {m.content}
@@ -58,7 +66,7 @@ export function DocumentChat({ draft, onChange }: { draft: Draft; onChange: (d: 
       <form onSubmit={submit} className="mt-3 flex gap-2">
         <input
           aria-label="Message"
-          className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900 focus:border-primary focus:outline-none"
+          className="input flex-1"
           placeholder="Type your answer..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -67,7 +75,7 @@ export function DocumentChat({ draft, onChange }: { draft: Draft; onChange: (d: 
         <button
           type="submit"
           disabled={pending || !input.trim()}
-          className="rounded-md bg-secondary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+          className="btn-submit"
         >
           Send
         </button>
