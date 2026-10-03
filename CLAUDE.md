@@ -44,12 +44,16 @@ scripts/stop-windows.ps1
 ```
 Backend available at http://localhost:8000
 
-## Color Scheme
-- Accent Yellow: `#ecad0a`
-- Blue Primary: `#209dd7`
-- Purple Secondary: `#753991` (submit buttons)
-- Dark Navy: `#032147` (headings)
-- Gray Text: `#888888`
+## Color Scheme and UI
+
+All colours, font sizes, radii and shadows are design tokens in `frontend/app/globals.css` (`@theme`); see UI.md. Tailwind's default palette and scales are reset, so only token classes work. Never hardcode colours in components.
+- Primary `#0B2545`: header, main buttons (`btn-primary`), active states, headings
+- Secondary `#0F766E`: secondary actions (`btn-secondary`), highlights such as progress
+- Accent `#2563EB`: links (`link`) and focus rings
+- Background `#F5F7FA`, Surface `#FFFFFF`, Border `#D9DEE5`, Text `#1A2433`, Muted `#5B6676`, input border `#8A94A3`
+- Warning `#B45309` (disclaimer), Error `#B91C1C` (errors, `btn-danger`)
+- Inter, self-hosted in `frontend/app/fonts/`; type scale `text-caption` 12, `text-body` 14, `text-heading` 16, `text-title` 20, `text-display` 24
+- Shared utilities: `page`, `btn-*`, `link`, `nav-link`, `input`, `card`, `data-table`, `alert-warning`, `alert-error`, `modal`; delete confirmation uses `ConfirmDialog`
 
 ## Implementation status
 
@@ -70,6 +74,6 @@ AI chat drafts every supported document (KAN-7, KAN-8):
 Accounts, document history and polish (KAN-9):
 - `backend/app/auth.py`: `/api/auth/signup|signin|signout|me`. Passwords hashed with stdlib scrypt; sign in creates a row in `sessions` and sets an HttpOnly `session` cookie (no `Secure` flag, the app runs on http). Protected routes take the `UserId` dependency; `/api/chat` and `/api/drafts` require it, `/api/health` and `/api/documents` stay public. Users, sessions and drafts are wiped on restart like the rest of the database.
 - `backend/app/drafts.py`: CRUD under `/api/drafts`, scoped to the signed in user (another user's draft is a 404). A draft stores `documentId`, `fields` and `messages` as JSON, using `ChatRequest` as the request body; the list omits messages.
-- Frontend: `/` signs in or up, `/documents/` is the dashboard (reopen, delete with confirm), `/draft/?id=N` reopens a draft. `DocumentChat` calls `onTurn` after each reply and keeps input locked until the page has saved, so the first save cannot be duplicated. `AppShell` guards signed in pages via `GET /api/auth/me`, and `lib/api.ts` sends any other 401 back to `/`.
+- Frontend: `/` signs in or up, `/documents/` is the dashboard (reopen, delete via `ConfirmDialog`), `/draft/?id=N` reopens a draft. `DocumentChat` calls `onTurn` after each reply and keeps input locked until the page has saved, so the first save cannot be duplicated. `AppShell` guards signed in pages via `GET /api/auth/me`, and `lib/api.ts` sends any other 401 back to `/`.
 - The disclaimer (`DISCLAIMER` in `lib/documents.ts`) shows above the preview and on the dashboard, and the PDF repeats it under the title with a footer on every page.
-- Styling: brand colors are Tailwind theme tokens in `globals.css`, which also defines the shared `input`, `btn-submit` (purple), `btn-primary` and `card` utilities via `@utility` (Tailwind 4 cannot `@apply` plain classes).
+- Styling: see Color Scheme and UI above. Shared classes are defined with `@utility` because Tailwind 4 cannot `@apply` plain classes.

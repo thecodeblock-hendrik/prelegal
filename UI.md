@@ -2,7 +2,7 @@
 
 Visual-only refresh to the corporate palette. No changes to functionality, routes, API calls or element ids (`section-*` in `DocumentPreview` drives preview scrolling).
 
-## Current styling approach
+## Styling approach before the refresh
 
 - Tailwind CSS 4, configured CSS-first in `frontend/app/globals.css`: `@theme` colour tokens (old brand: yellow accent, light-blue primary, purple secondary, navy, `#888` muted) and `@utility` classes `input`, `btn`, `btn-submit`, `btn-primary`, `card`.
 - Components mix those with raw Tailwind palette classes (`slate-*`, `red-*`, `amber-*`, `white`) and default sizes (`text-xs` to `text-4xl`, `rounded-md` to `rounded-2xl`).
@@ -47,12 +47,11 @@ CSS-first, matching the existing pattern: every colour, font size, radius and sh
 | `border-strong` | `#8A94A3` | Input borders (3:1 for controls) |
 | `text` | `#1A2433` | Body text |
 | `muted` | `#5B6676` | Secondary text (replaces `#888`) |
-| `success` | `#15803D` | Success alerts |
 | `warning` / `warning-soft` | `#B45309` / `#FFFBEB` | Warning alerts (disclaimer) |
 | `error` / `error-soft` | `#B91C1C` / `#FEF2F2` | Errors, destructive buttons |
 | `error-hover` / `error-active` | `#991B1B` / `#7F1D1D` | Destructive button states |
 
-Hover, active, soft, `border-strong`, `muted` and `on-primary-muted` are additions to the ticket palette, needed for interaction states and AA contrast.
+Hover, active, soft, `border-strong`, `muted` and `on-primary-muted` are additions to the ticket palette, needed for interaction states and AA contrast. Success (`#15803D`) is not used yet; add it as `--color-success` with an `alert-success` utility when a success message appears.
 
 ### Typography
 
@@ -70,15 +69,16 @@ Inter (self-hosted variable font), fallback `system-ui, -apple-system, "Segoe UI
 
 ### Spacing, radius, shadow
 
-- Spacing: Tailwind's 4px scale, limited to steps 1, 2, 3, 4, 5, 6, 8, 10, 12 and 16. Pages use `px-4` on phones and `px-6` from `sm`.
+- Spacing: Tailwind's 4px scale (steps 1 to 6, 8, 10, 12, 16). Pages use `px-4` on phones and `px-6` from `sm`.
+- Containers: `max-w-page` 80rem (drafting page, header), `max-w-narrow` 64rem (dashboard).
 - Radius: `sm` 4px, `md` 6px (controls), `lg` 8px (cards, modals), `full` (pills, progress).
 - Shadow: `card` (subtle lift), `modal` (dialog).
 
 ## Shared components (`@utility`)
 
-- Buttons: `btn-primary`, `btn-secondary`, `btn-danger`, `btn-ghost`, each with hover, active, focus-visible and disabled states.
+- Buttons: `btn-primary` (the main action: sign in, Send, New document), `btn-secondary` (secondary actions: Download PDF, which follows the chat), `btn-danger` (confirm delete), `btn-ghost` (Cancel, row Delete), each with hover, active, focus-visible and disabled states.
 - `link` for text links; `input` with hover, focus, disabled and placeholder states.
-- `card`, `data-table`, `alert-warning`, `alert-error`, `nav-link` (with `aria-current` active state), `page` (page container, fixes the 375px overflow).
+- `card`, `data-table`, `alert-warning`, `alert-error`, `modal`, `nav-link` (with `aria-current` active state), `page` (page container, fixes the 375px overflow).
 - `ConfirmDialog`: Cancel is focused first; Esc and backdrop click cancel.
 
 ## Contrast (WCAG 2.1 AA, computed)
@@ -94,7 +94,7 @@ Inter (self-hosted variable font), fallback `system-ui, -apple-system, "Segoe UI
 | Input border (`border-strong`) on surface | 3.07 (3:1 for controls) |
 | Focus ring: accent on surface, white on primary | 5.17, 15.39 |
 
-The accent ring on the navy header is only 2.98:1, so focus rings on dark surfaces are white.
+The accent ring on the navy header is only 2.98:1, so focus rings on dark surfaces are white. The PDF footer uses the muted colour (`#5B6676`) instead of `#888`.
 
 ## Breakpoints
 
