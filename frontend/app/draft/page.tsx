@@ -66,14 +66,14 @@ function DraftEditor() {
 
   if (!messages) return null;
   return (
-    <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <main className="page max-w-page">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-navy">{definition ? definition.name : "New document"}</h1>
-          <p className="mt-1 text-sm text-muted">
+          <h1 className="text-title font-semibold text-primary">{definition ? definition.name : "New document"}</h1>
+          <p className="mt-1 text-muted tabular-nums">
             {progress ? `${progress.done} of ${progress.total} sections complete` : "Describe the agreement you need to get started."}
             {draftId !== null && !saveFailed && " · Saved"}
-            {saveFailed && <span className="text-red-600"> · Could not save your latest changes</span>}
+            {saveFailed && <span className="text-error"> · Could not save your latest changes</span>}
           </p>
         </div>
         <button
@@ -81,13 +81,13 @@ function DraftEditor() {
           disabled={!complete}
           title={complete ? undefined : "Available once a document is chosen and both party companies are named"}
           onClick={() => definition && generateDocumentPdf(definition, draft).save(`${definition.name}.pdf`)}
-          className="btn-primary"
+          className="btn-secondary"
         >
           Download PDF
         </button>
       </div>
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,26rem)_1fr]">
-        <section className="card flex flex-col p-5 lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:self-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,26rem)_1fr]">
+        <section className="card flex flex-col p-4 sm:p-5 lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:self-start">
           <DocumentChat draft={draft} initialMessages={messages} onTurn={handleTurn} />
         </section>
         <section aria-label="Document preview" className="space-y-4">

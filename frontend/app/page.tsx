@@ -40,32 +40,33 @@ export default function AuthPage() {
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
-      <aside className="hidden flex-col justify-between bg-navy p-12 text-white lg:flex">
+      <aside className="hidden flex-col justify-between bg-primary p-12 text-surface lg:flex">
         <Logo light />
         <div className="max-w-md space-y-4">
-          <h2 className="text-4xl font-semibold leading-tight">
-            Draft legal agreements in minutes, <span className="text-accent">not days.</span>
+          <span className="block h-1 w-12 rounded-full bg-secondary" />
+          <h2 className="text-display font-semibold">
+            Draft legal agreements in minutes, not days.
           </h2>
-          <p className="text-slate-300">
+          <p className="text-on-primary-muted">
             Chat with an AI assistant that picks the right Common Paper template and fills in every detail with you.
           </p>
         </div>
-        <p className="text-xs text-slate-400">Documents are drafts and subject to legal review.</p>
+        <p className="text-caption text-on-primary-muted">Documents are drafts and subject to legal review.</p>
       </aside>
-      <main className="flex items-center justify-center p-6">
-        <form onSubmit={submit} className="w-full max-w-sm space-y-5">
+      <main className="flex items-center justify-center px-4 py-10 sm:p-6">
+        <form onSubmit={submit} className="card w-full max-w-sm space-y-5 p-6 sm:p-8">
           <div className="lg:hidden">
             <Logo />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-navy">{copy.title}</h1>
-            <p className="mt-1 text-sm text-muted">Draft, save and revisit your agreements.</p>
+            <h1 className="text-display font-semibold text-primary">{copy.title}</h1>
+            <p className="mt-1 text-muted">Draft, save and revisit your agreements.</p>
           </div>
-          <label className="block text-sm font-medium text-navy">
+          <label className="block font-medium">
             Email
             <input required type="email" name="email" autoComplete="email" className="input mt-1" />
           </label>
-          <label className="block text-sm font-medium text-navy">
+          <label className="block font-medium">
             Password
             <input
               required
@@ -75,13 +76,17 @@ export default function AuthPage() {
               autoComplete={mode === "signin" ? "current-password" : "new-password"}
               className="input mt-1"
             />
-            {mode === "signup" && <span className="mt-1 block text-xs font-normal text-muted">At least 8 characters.</span>}
+            {mode === "signup" && <span className="mt-1 block text-caption font-normal text-muted">At least 8 characters.</span>}
           </label>
-          {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-          <button type="submit" disabled={pending} className="btn-submit w-full">
+          {error && (
+            <p role="alert" className="alert-error">
+              {error}
+            </p>
+          )}
+          <button type="submit" disabled={pending} className="btn-primary w-full">
             {pending ? "Please wait..." : copy.action}
           </button>
-          <p className="text-center text-sm text-muted">
+          <p className="text-center text-muted">
             {copy.switchText}{" "}
             <button
               type="button"
@@ -89,7 +94,7 @@ export default function AuthPage() {
                 setMode(mode === "signin" ? "signup" : "signin");
                 setError("");
               }}
-              className="font-medium text-primary hover:underline"
+              className="link"
             >
               {copy.switchAction}
             </button>

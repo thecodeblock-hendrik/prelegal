@@ -1,36 +1,137 @@
 @import "tailwindcss";
 
+/* Design tokens: the only place colours, font sizes, radii and shadows are defined. See UI.md. */
+@theme {
+  --color-*: initial;
+  --color-primary: #0b2545;
+  --color-primary-hover: #1d3b63;
+  --color-primary-active: #071a33;
+  --color-primary-soft: #eef2f7;
+  --color-on-primary-muted: #c8d1dd;
+  --color-secondary: #0f766e;
+  --color-secondary-hover: #0d6560;
+  --color-secondary-active: #0b5853;
+  --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
+  --color-background: #f5f7fa;
+  --color-surface: #ffffff;
+  --color-border: #d9dee5;
+  --color-border-strong: #8a94a3;
+  --color-text: #1a2433;
+  --color-muted: #5b6676;
+  --color-warning: #b45309;
+  --color-warning-soft: #fffbeb;
+  --color-error: #b91c1c;
+  --color-error-soft: #fef2f2;
+  --color-error-hover: #991b1b;
+  --color-error-active: #7f1d1d;
+
+  --text-*: initial;
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.5;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.5;
+  --text-heading: 1rem;
+  --text-heading--line-height: 1.25;
+  --text-title: 1.25rem;
+  --text-title--line-height: 1.25;
+  --text-display: 1.5rem;
+  --text-display--line-height: 1.25;
+
+  --radius-*: initial;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-full: 9999px;
+
+  --shadow-*: initial;
+  --shadow-card: 0 1px 2px rgb(11 37 69 / 0.06), 0 1px 3px rgb(11 37 69 / 0.04);
+  --shadow-modal: 0 12px 32px rgb(11 37 69 / 0.2);
+
+  --container-page: 80rem;
+  --container-narrow: 64rem;
+}
+
 @theme inline {
-  --color-accent: #ecad0a;
-  --color-primary: #209dd7;
-  --color-secondary: #753991;
-  --color-navy: #032147;
-  --color-muted: #888888;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-body {
-  background: #f5f7fa;
-  color: #1f2937;
+@layer base {
+  body {
+    @apply bg-background font-sans text-body text-text antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  body:has(dialog[open]) {
+    overflow: hidden;
+  }
 }
 
-@utility input {
-  @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none;
+@utility page {
+  @apply mx-auto w-full space-y-6 px-4 py-6 sm:px-6 sm:py-8;
 }
 
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50;
-}
-
-@utility btn-submit {
-  @apply btn bg-secondary;
+  @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-4 py-2 text-body font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-50;
 }
 
 @utility btn-primary {
-  @apply btn bg-primary;
+  @apply btn bg-primary text-surface not-disabled:hover:bg-primary-hover not-disabled:active:bg-primary-active;
+}
+
+@utility btn-secondary {
+  @apply btn bg-secondary text-surface not-disabled:hover:bg-secondary-hover not-disabled:active:bg-secondary-active;
+}
+
+@utility btn-danger {
+  @apply btn bg-error text-surface not-disabled:hover:bg-error-hover not-disabled:active:bg-error-active;
+}
+
+@utility btn-ghost {
+  @apply btn border border-border bg-surface text-text not-disabled:hover:bg-background not-disabled:active:bg-primary-soft;
+}
+
+@utility link {
+  @apply rounded-sm font-medium text-accent underline-offset-2 hover:text-accent-hover hover:underline active:text-primary;
+}
+
+@utility nav-link {
+  @apply rounded-md px-3 py-2 text-body font-medium text-on-primary-muted transition-colors hover:bg-primary-hover hover:text-surface focus-visible:outline-surface active:bg-primary-active aria-[current=page]:bg-primary-hover aria-[current=page]:text-surface;
+}
+
+@utility input {
+  @apply w-full min-w-0 rounded-md border border-border-strong bg-surface px-3 py-2 text-body text-text transition-colors placeholder:text-muted not-disabled:hover:border-primary focus-visible:border-accent focus-visible:outline-offset-0 disabled:cursor-not-allowed disabled:bg-background disabled:text-muted;
 }
 
 @utility card {
-  @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+  @apply rounded-lg border border-border bg-surface shadow-card;
+}
+
+@utility data-table {
+  @apply w-full border-collapse text-left tabular-nums;
+  & th,
+  & td {
+    @apply border border-border p-2;
+  }
+  & thead th {
+    @apply bg-background font-semibold text-primary;
+  }
+}
+
+@utility alert {
+  @apply rounded-md border border-l-4 px-4 py-3 text-body text-text;
+}
+
+@utility alert-warning {
+  @apply alert border-warning/40 border-l-warning bg-warning-soft;
+}
+
+@utility alert-error {
+  @apply alert border-error/40 border-l-error bg-error-soft text-error;
+}
+
+@utility modal {
+  @apply m-auto w-[calc(100%-2rem)] max-w-md rounded-lg border border-border bg-surface p-0 text-text shadow-modal backdrop:bg-primary/60;
 }
