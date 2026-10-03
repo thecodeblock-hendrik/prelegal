@@ -18,7 +18,7 @@ export function AppHeader({ user }: { user: User }) {
   return (
     <header className="bg-primary">
       <div className="mx-auto flex max-w-page items-center gap-3 px-4 py-3 sm:gap-6 sm:px-6">
-        <Link href="/documents/" className="rounded-md focus-visible:outline-surface">
+        <Link href="/documents/" className="rounded-md transition-opacity hover:opacity-90 focus-visible:outline-surface active:opacity-75">
           <Logo light />
         </Link>
         <nav>

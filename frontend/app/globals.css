@@ -19,7 +19,6 @@
   --color-border-strong: #8a94a3;
   --color-text: #1a2433;
   --color-muted: #5b6676;
-  --color-success: #15803d;
   --color-warning: #b45309;
   --color-warning-soft: #fffbeb;
   --color-error: #b91c1c;
@@ -99,11 +98,11 @@
 }
 
 @utility nav-link {
-  @apply rounded-md px-3 py-1.5 text-body font-medium text-on-primary-muted transition-colors hover:bg-primary-hover hover:text-surface focus-visible:outline-surface active:bg-primary-active aria-[current=page]:bg-primary-hover aria-[current=page]:text-surface;
+  @apply rounded-md px-3 py-2 text-body font-medium text-on-primary-muted transition-colors hover:bg-primary-hover hover:text-surface focus-visible:outline-surface active:bg-primary-active aria-[current=page]:bg-primary-hover aria-[current=page]:text-surface;
 }
 
 @utility input {
-  @apply w-full min-w-0 rounded-md border border-border-strong bg-surface px-3 py-2 text-body text-text transition-colors placeholder:text-muted hover:border-primary focus-visible:border-accent focus-visible:outline-offset-0 disabled:cursor-not-allowed disabled:bg-background disabled:text-muted;
+  @apply w-full min-w-0 rounded-md border border-border-strong bg-surface px-3 py-2 text-body text-text transition-colors placeholder:text-muted not-disabled:hover:border-primary focus-visible:border-accent focus-visible:outline-offset-0 disabled:cursor-not-allowed disabled:bg-background disabled:text-muted;
 }
 
 @utility card {

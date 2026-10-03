@@ -85,7 +85,7 @@ function addFooters(doc: jsPDF) {
   const height = doc.internal.pageSize.getHeight();
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  doc.setTextColor(136);
+  doc.setTextColor(91, 102, 118);
   for (let page = 1; page <= pages; page++) {
     doc.setPage(page);
     doc.text(`${FOOTER}    Page ${page} of ${pages}`, MARGIN, height - MARGIN / 2);

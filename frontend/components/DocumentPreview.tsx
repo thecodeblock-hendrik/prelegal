@@ -76,7 +76,7 @@ export function DocumentPreview({ document, documents, draft }: { document?: Doc
           </tbody>
         </table>
       </div>
-      <div className="space-y-3 border-t border-border pt-4 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:text-heading [&_h1]:font-semibold [&_h1]:text-primary [&_a]:text-accent [&_a]:underline">
+      <div className="space-y-3 border-t border-border pt-4 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:text-heading [&_h1]:font-semibold [&_h1]:text-primary [&_a]:text-accent [&_a]:underline [&_a]:hover:text-accent-hover [&_a]:active:text-primary">
         <ReactMarkdown>{highlightTerms(document.body)}</ReactMarkdown>
       </div>
     </article>

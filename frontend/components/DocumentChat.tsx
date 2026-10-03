@@ -53,7 +53,7 @@ export function DocumentChat({ draft, initialMessages, onTurn }: Props) {
         {messages.map((m, i) => (
           <p
             key={i}
-            className={`max-w-[85%] whitespace-pre-wrap rounded-lg px-3.5 py-2 ${
+            className={`max-w-[85%] whitespace-pre-wrap rounded-lg px-4 py-2 ${
               m.role === "user" ? "ml-auto rounded-br-sm bg-primary text-surface" : "rounded-bl-sm border border-border bg-background"
             }`}
           >
@@ -63,7 +63,7 @@ export function DocumentChat({ draft, initialMessages, onTurn }: Props) {
         {pending && <p className="text-muted">Thinking...</p>}
       </div>
       {error && (
-        <p role="alert" className="mt-2 text-caption text-error">
+        <p role="alert" className="alert-error mt-2 text-caption">
           {error}
         </p>
       )}

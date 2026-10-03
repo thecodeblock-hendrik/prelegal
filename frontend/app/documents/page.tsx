@@ -64,7 +64,7 @@ function Dashboard() {
           <p className="max-w-sm text-muted">
             Tell the assistant what you need and it will draft the agreement with you, one question at a time.
           </p>
-          <Link href="/draft/" className="btn-secondary mt-2">
+          <Link href="/draft/" className="btn-primary mt-2">
             Draft your first document
           </Link>
         </div>
@@ -97,14 +97,14 @@ function DraftRow({ summary, documents, onDelete }: { summary: DraftSummary; doc
   return (
     <li className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4 transition-colors hover:bg-background sm:px-5">
       <Link href={`/draft/?id=${summary.id}`} className="group w-full min-w-0 rounded-sm sm:w-auto sm:flex-1">
-        <p className="truncate font-medium text-primary group-hover:text-accent group-hover:underline">{definition?.name ?? "Untitled draft"}</p>
+        <p className="truncate font-medium text-primary group-hover:text-accent group-hover:underline group-active:text-primary">{definition?.name ?? "Untitled draft"}</p>
         <p className="truncate text-caption text-muted">
           {partiesLabel(draft)} · Updated {formatUpdated(summary.updatedAt)}
         </p>
       </Link>
       {progress && (
         <div className="flex-1 text-caption text-muted sm:w-36 sm:flex-none">
-          <div className="h-1.5 overflow-hidden rounded-full bg-border">
+          <div className="h-2 overflow-hidden rounded-full bg-border">
             <div className="h-full rounded-full bg-secondary" style={{ width: `${(progress.done / progress.total) * 100}%` }} />
           </div>
           <p className="mt-1 tabular-nums">
