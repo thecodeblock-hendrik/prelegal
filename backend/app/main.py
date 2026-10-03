@@ -4,9 +4,10 @@ import os
 from contextlib import asynccontextmanager
 
 from dotenv import find_dotenv, load_dotenv
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from app import auth, drafts
 from app.chat import ChatRequest, ChatResponse, reply
 from app.db import init_db
 from app.documents import DOCUMENTS, Document
@@ -33,6 +34,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Prelegal", lifespan=lifespan)
+app.include_router(auth.router)
+app.include_router(drafts.router)
 
 
 @app.get("/api/health")
@@ -47,7 +50,7 @@ def documents() -> list[Document]:
     return list(DOCUMENTS.values())
 
 
-@app.post("/api/chat")
+@app.post("/api/chat", dependencies=[Depends(auth.current_user)])
 def chat(request: ChatRequest) -> ChatResponse:
     """Continue the document drafting conversation."""
     return reply(request)

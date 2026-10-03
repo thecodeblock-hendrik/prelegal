@@ -6,13 +6,9 @@ from fastapi.testclient import TestClient
 from app import chat
 from app.documents import DOCUMENTS
 from app.main import app
+from tests.conftest import sign_up
 
 ACME = {"company": "Acme", "name": None, "title": None, "noticeAddress": None}
-
-
-@pytest.fixture(autouse=True)
-def temp_db(tmp_path, monkeypatch):
-    monkeypatch.setenv("DB_PATH", str(tmp_path / "test.db"))
 
 
 def fake_llm(monkeypatch, **response):
@@ -32,7 +28,12 @@ def fake_llm(monkeypatch, **response):
 
 def post_chat(body: dict):
     with TestClient(app) as client:
+        sign_up(client)
         return client.post("/api/chat", json=body)
+
+
+def test_chat_requires_sign_in(client):
+    assert client.post("/api/chat", json={"messages": [], "fields": {}}).status_code == 401
 
 
 def test_chat_returns_reply_document_and_values(monkeypatch):
