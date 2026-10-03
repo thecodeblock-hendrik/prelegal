@@ -55,7 +55,7 @@ Backend available at http://localhost:8000
 
 v1 foundation is complete (KAN-4, KAN-5, KAN-6):
 - `templates/` holds the Common Paper markdown templates listed in catalog.json.
-- Frontend: fake login at `/` (accepts any input, no backend call). Logic in `frontend/lib/`, tests via `npm test` (vitest).
+- Frontend: logic in `frontend/lib/` as pure functions, tests via `npm test` (vitest, node environment, no component tests).
 - Backend: `backend/app/main.py` serves the API and mounts the static frontend; `backend/app/db.py` recreates the SQLite users table on startup. Tests via `uv run pytest`.
 - Docker: Node stage builds the frontend, uv Python stage runs uvicorn on port 8000 with `catalog.json` and `templates/` alongside `backend/`; start scripts pass `.env` to the container.
 
@@ -67,4 +67,9 @@ AI chat drafts every supported document (KAN-7, KAN-8):
 - `DocumentChat` scrolls only its own message list (not `scrollIntoView`, which moves the whole page); `DocumentPreview` scrolls just enough to show the cover page section a reply filled in.
 - `next dev` has no `/api` proxy; test the app by serving `frontend/out` from FastAPI (`STATIC_DIR=../frontend/out uv run uvicorn app.main:app`).
 
-Not built yet: real sign up / sign in endpoints.
+Accounts, document history and polish (KAN-9):
+- `backend/app/auth.py`: `/api/auth/signup|signin|signout|me`. Passwords hashed with stdlib scrypt; sign in creates a row in `sessions` and sets an HttpOnly `session` cookie (no `Secure` flag, the app runs on http). Protected routes take the `UserId` dependency; `/api/chat` and `/api/drafts` require it, `/api/health` and `/api/documents` stay public. Users, sessions and drafts are wiped on restart like the rest of the database.
+- `backend/app/drafts.py`: CRUD under `/api/drafts`, scoped to the signed in user (another user's draft is a 404). A draft stores `documentId`, `fields` and `messages` as JSON, using `ChatRequest` as the request body; the list omits messages.
+- Frontend: `/` signs in or up, `/documents/` is the dashboard (reopen, delete with confirm), `/draft/?id=N` reopens a draft. `DocumentChat` calls `onTurn` after each reply and keeps input locked until the page has saved, so the first save cannot be duplicated. `AppShell` guards signed in pages via `GET /api/auth/me`, and `lib/api.ts` sends any other 401 back to `/`.
+- The disclaimer (`DISCLAIMER` in `lib/documents.ts`) shows above the preview and on the dashboard, and the PDF repeats it under the title with a footer on every page.
+- Styling: brand colors are Tailwind theme tokens in `globals.css`, which also defines the shared `input`, `btn-submit` (purple), `btn-primary` and `card` utilities via `@utility` (Tailwind 4 cannot `@apply` plain classes).

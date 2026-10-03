@@ -11,6 +11,18 @@ CREATE TABLE users (
     password_hash TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE sessions (
+    token TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id)
+);
+CREATE TABLE drafts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    document_id TEXT,
+    fields TEXT NOT NULL,
+    messages TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
 """
 
 

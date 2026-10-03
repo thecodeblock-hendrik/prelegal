@@ -1,31 +1,36 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
   --color-accent: #ecad0a;
   --color-primary: #209dd7;
   --color-secondary: #753991;
   --color-navy: #032147;
   --color-muted: #888888;
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: #f5f7fa;
+  color: #1f2937;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility input {
+  @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none;
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-xs transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@utility btn-submit {
+  @apply btn bg-secondary;
+}
+
+@utility btn-primary {
+  @apply btn bg-primary;
+}
+
+@utility card {
+  @apply rounded-xl border border-slate-200 bg-white shadow-sm;
 }

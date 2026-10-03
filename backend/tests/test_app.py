@@ -1,4 +1,3 @@
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -6,20 +5,15 @@ from app import db
 from app.main import FrontendFiles, app
 
 
-@pytest.fixture(autouse=True)
-def temp_db(tmp_path, monkeypatch):
-    monkeypatch.setenv("DB_PATH", str(tmp_path / "test.db"))
-
-
 def test_health():
     with TestClient(app) as client:
         assert client.get("/api/health").json() == {"status": "ok"}
 
 
-def test_startup_creates_users_table():
+def test_startup_creates_tables():
     with TestClient(app), db.connect() as conn:
         tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-    assert ("users",) in tables
+    assert {("users",), ("sessions",), ("drafts",)} <= set(tables)
 
 
 def test_init_db_starts_from_scratch():

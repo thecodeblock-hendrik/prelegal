@@ -45,7 +45,7 @@ describe("sendChat", () => {
   });
 
   it("throws when the request fails", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500 }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) }));
     await expect(sendChat([], emptyDraft())).rejects.toThrow("500");
   });
 });

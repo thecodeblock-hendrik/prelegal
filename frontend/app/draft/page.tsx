@@ -1,53 +1,100 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { AppShell } from "@/components/AppShell";
+import { Disclaimer } from "@/components/Disclaimer";
 import { DocumentChat } from "@/components/DocumentChat";
 import { DocumentPreview } from "@/components/DocumentPreview";
+import { ChatMessage, GREETING } from "@/lib/chat";
 import { DocumentDef, Draft, emptyDraft, fetchDocuments, isComplete, sectionProgress } from "@/lib/documents";
+import { getDraft, saveDraft, toDraft } from "@/lib/drafts";
 import { generateDocumentPdf } from "@/lib/pdf";
 
 export default function DraftPage() {
+  return (
+    <AppShell>
+      <Suspense fallback={null}>
+        <DraftEditor />
+      </Suspense>
+    </AppShell>
+  );
+}
+
+/** Chat and live preview for one draft; ?id=N reopens a saved draft and every reply saves it. */
+function DraftEditor() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [reopenId] = useState(() => Number(searchParams.get("id")) || null);
+  const [draftId, setDraftId] = useState(reopenId);
   const [documents, setDocuments] = useState<DocumentDef[]>([]);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
-  const document = documents.find((d) => d.id === draft.documentId);
-  const complete = isComplete(draft) && document !== undefined;
-  const progress = document && sectionProgress(document, draft);
+  /** The chat to start from; null while a reopened draft is loading. */
+  const [messages, setMessages] = useState<ChatMessage[] | null>(reopenId ? null : [GREETING]);
+  const [saveFailed, setSaveFailed] = useState(false);
+  const definition = documents.find((d) => d.id === draft.documentId);
+  const complete = isComplete(draft) && definition !== undefined;
+  const progress = definition && sectionProgress(definition, draft);
 
   useEffect(() => {
     fetchDocuments().then(setDocuments);
   }, []);
 
+  useEffect(() => {
+    if (reopenId === null) return;
+    getDraft(reopenId)
+      .then((saved) => {
+        setDraft(toDraft(saved));
+        setMessages(saved.messages);
+      })
+      .catch(() => router.replace("/documents/"));
+  }, [reopenId, router]);
+
+  async function handleTurn(nextMessages: ChatMessage[], next: Draft) {
+    setDraft(next);
+    try {
+      const saved = await saveDraft(draftId, nextMessages, next);
+      setSaveFailed(false);
+      if (draftId === null) {
+        setDraftId(saved.id);
+        window.history.replaceState(null, "", `/draft/?id=${saved.id}`);
+      }
+    } catch {
+      setSaveFailed(true);
+    }
+  }
+
+  if (!messages) return null;
   return (
-    <div className="min-h-screen bg-zinc-100">
-      <header className="border-b bg-white px-6 py-4">
-        <h1 className="text-xl font-semibold text-zinc-900">
-          Prelegal &middot; {document ? document.name : "Document Creator"}
-        </h1>
-      </header>
-      <main className="mx-auto grid max-w-7xl gap-6 p-6 lg:grid-cols-[minmax(0,26rem)_1fr]">
-        <section className="flex flex-col gap-4 rounded-lg bg-white p-5 shadow lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:self-start">
-          <div className="min-h-0 flex-1">
-            <DocumentChat draft={draft} onChange={setDraft} />
-          </div>
-          <button
-            type="button"
-            disabled={!complete}
-            onClick={() => document && generateDocumentPdf(document, draft).save(`${document.name}.pdf`)}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-zinc-300"
-          >
-            Download PDF
-          </button>
-          {progress && (
-            <p className="text-xs font-medium text-navy">
-              {progress.done} of {progress.total} sections complete
-            </p>
-          )}
-          {!complete && <p className="text-xs text-zinc-500">Download unlocks once a document is chosen and both party company names are filled in.</p>}
+    <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-navy">{definition ? definition.name : "New document"}</h1>
+          <p className="mt-1 text-sm text-muted">
+            {progress ? `${progress.done} of ${progress.total} sections complete` : "Describe the agreement you need to get started."}
+            {draftId !== null && !saveFailed && " · Saved"}
+            {saveFailed && <span className="text-red-600"> · Could not save your latest changes</span>}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={!complete}
+          title={complete ? undefined : "Available once a document is chosen and both party companies are named"}
+          onClick={() => definition && generateDocumentPdf(definition, draft).save(`${definition.name}.pdf`)}
+          className="btn-primary"
+        >
+          Download PDF
+        </button>
+      </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,26rem)_1fr]">
+        <section className="card flex flex-col p-5 lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:self-start">
+          <DocumentChat draft={draft} initialMessages={messages} onTurn={handleTurn} />
         </section>
-        <section aria-label="Document preview">
-          <DocumentPreview document={document} documents={documents} draft={draft} />
+        <section aria-label="Document preview" className="space-y-4">
+          <Disclaimer />
+          <DocumentPreview document={definition} documents={documents} draft={draft} />
         </section>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }

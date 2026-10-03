@@ -1,3 +1,4 @@
+import { api } from "./api";
 import { Draft, Party } from "./documents";
 
 export interface ChatMessage {
@@ -34,17 +35,12 @@ export function applyUpdate(draft: Draft, update: ChatUpdate): Draft {
   };
 }
 
-/** Sends the conversation and current draft to the backend and returns its reply. */
-export async function sendChat(
-  messages: ChatMessage[],
-  draft: Draft,
-): Promise<ChatUpdate & { reply: string }> {
+/** The request body shared by chat and saved drafts: the conversation, document id and field values. */
+export function toPayload(messages: ChatMessage[], draft: Draft) {
   const { documentId, ...fields } = draft;
-  const response = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, documentId, fields }),
-  });
-  if (!response.ok) throw new Error(`Chat request failed: ${response.status}`);
-  return response.json();
+  return { messages, documentId, fields };
 }
+
+/** Sends the conversation and current draft to the backend and returns its reply. */
+export const sendChat = (messages: ChatMessage[], draft: Draft) =>
+  api<ChatUpdate & { reply: string }>("/api/chat", "POST", toPayload(messages, draft));

@@ -1,3 +1,5 @@
+import { api } from "./api";
+
 /** A supported legal document, as served by GET /api/documents. */
 export interface DocumentDef {
   id: string;
@@ -29,13 +31,12 @@ export function emptyDraft(): Draft {
   return { documentId: null, variables: {}, party1: { ...emptyParty }, party2: { ...emptyParty } };
 }
 
-export async function fetchDocuments(): Promise<DocumentDef[]> {
-  const response = await fetch("/api/documents");
-  if (!response.ok) throw new Error(`Documents request failed: ${response.status}`);
-  return response.json();
-}
+export const fetchDocuments = () => api<DocumentDef[]>("/api/documents");
 
 export const BLANK = "________";
+
+export const DISCLAIMER =
+  "This document is a draft generated from a standard template. It is not legal advice and is subject to review by a qualified lawyer before use.";
 
 export function variableValue(draft: Draft, name: string): string {
   return draft.variables[name]?.trim() || BLANK;
