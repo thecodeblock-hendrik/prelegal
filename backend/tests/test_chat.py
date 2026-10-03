@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -27,8 +28,9 @@ def fake_llm(monkeypatch, **response):
 
 
 def post_chat(body: dict):
+    """Post to /api/chat as a newly signed up user; the database persists between calls."""
     with TestClient(app) as client:
-        sign_up(client)
+        sign_up(client, email=f"{uuid4().hex}@acme.com")
         return client.post("/api/chat", json=body)
 
 
