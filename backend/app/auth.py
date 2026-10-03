@@ -5,12 +5,13 @@ import hmac
 import os
 import secrets
 import sqlite3
+from datetime import timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
 from pydantic import BaseModel, Field, StringConstraints
 
-from app.db import connect
+from app.db import Db, utc_now
 
 COOKIE = "session"
 WEEK = 7 * 24 * 3600
@@ -48,18 +49,29 @@ def verify_password(password: str, stored: str) -> bool:
     return hmac.compare_digest(scrypt(password, bytes.fromhex(salt)), digest)
 
 
-def start_session(response: Response, user_id: int) -> None:
-    """Create a session for the user and set its cookie on the response."""
+def hash_token(token: str | None) -> str:
+    """Hash a session token so the database never holds the cookie value."""
+    return hashlib.sha256((token or "").encode()).hexdigest()
+
+
+def start_session(db: Db, response: Response, user_id: int) -> None:
+    """Create a session for the user, clear expired ones and set the cookie on the response."""
     token = secrets.token_urlsafe(32)
-    with connect() as conn:
-        conn.execute("INSERT INTO sessions (token, user_id) VALUES (?, ?)", (token, user_id))
+    now = utc_now()
+    expires = utc_now(timedelta(seconds=WEEK))
+    db.execute("DELETE FROM sessions WHERE expires_at <= ?", (now,))
+    db.execute(
+        "INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
+        (hash_token(token), user_id, now, expires),
+    )
     response.set_cookie(COOKIE, token, max_age=WEEK, httponly=True, samesite="lax")
 
 
-def current_user(session: Annotated[str | None, Cookie()] = None) -> int:
+def current_user(db: Db, session: Annotated[str | None, Cookie()] = None) -> int:
     """Return the signed in user's id, or reject the request with 401."""
-    with connect() as conn:
-        row = conn.execute("SELECT user_id FROM sessions WHERE token = ?", (session,)).fetchone()
+    row = db.execute(
+        "SELECT user_id FROM sessions WHERE token_hash = ? AND expires_at > ?", (hash_token(session), utc_now())
+    ).fetchone()
     if row is None:
         raise HTTPException(401, "Not signed in")
     return row[0]
@@ -69,42 +81,39 @@ UserId = Annotated[int, Depends(current_user)]
 
 
 @router.post("/signup", status_code=201)
-def signup(credentials: Credentials, response: Response) -> User:
+def signup(credentials: Credentials, response: Response, db: Db) -> User:
     """Register a new user and sign them in."""
+    now = utc_now()
     try:
-        with connect() as conn:
-            cursor = conn.execute(
-                "INSERT INTO users (email, password_hash) VALUES (?, ?)",
-                (credentials.email, hash_password(credentials.password)),
-            )
+        cursor = db.execute(
+            "INSERT INTO users (email, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?)",
+            (credentials.email, hash_password(credentials.password), now, now),
+        )
     except sqlite3.IntegrityError:
         raise HTTPException(409, "An account with this email already exists")
-    start_session(response, cursor.lastrowid)
+    start_session(db, response, cursor.lastrowid)
     return User(email=credentials.email)
 
 
 @router.post("/signin")
-def signin(credentials: Credentials, response: Response) -> User:
+def signin(credentials: Credentials, response: Response, db: Db) -> User:
     """Sign in an existing user."""
-    with connect() as conn:
-        row = conn.execute("SELECT id, password_hash FROM users WHERE email = ?", (credentials.email,)).fetchone()
+    row = db.execute("SELECT id, password_hash FROM users WHERE email = ?", (credentials.email,)).fetchone()
     if row is None or not verify_password(credentials.password, row[1]):
         raise HTTPException(401, "Incorrect email or password")
-    start_session(response, row[0])
+    start_session(db, response, row[0])
     return User(email=credentials.email)
 
 
 @router.post("/signout", status_code=204)
-def signout(response: Response, session: Annotated[str | None, Cookie()] = None) -> None:
+def signout(response: Response, db: Db, session: Annotated[str | None, Cookie()] = None) -> None:
     """End the current session."""
-    with connect() as conn:
-        conn.execute("DELETE FROM sessions WHERE token = ?", (session,))
+    db.execute("DELETE FROM sessions WHERE token_hash = ?", (hash_token(session),))
     response.delete_cookie(COOKIE)
 
 
 @router.get("/me")
-def me(user_id: UserId) -> User:
+def me(user_id: UserId, db: Db) -> User:
     """Return the signed in user."""
-    with connect() as conn:
-        (email,) = conn.execute("SELECT email FROM users WHERE id = ?", (user_id,)).fetchone()
+    (email,) = db.execute("SELECT email FROM users WHERE id = ?", (user_id,)).fetchone()
     return User(email=email)

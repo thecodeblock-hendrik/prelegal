@@ -28,7 +28,7 @@ class FrontendFiles(StaticFiles):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Create a fresh database when the server starts."""
+    """Migrate the database when the server starts."""
     init_db()
     yield
 
