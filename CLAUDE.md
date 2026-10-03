@@ -55,13 +55,14 @@ Backend available at http://localhost:8000
 
 v1 foundation is complete (KAN-4, KAN-5, KAN-6):
 - `templates/` holds the Common Paper markdown templates listed in catalog.json.
-- Frontend: fake login at `/` (accepts any input, no backend call) that routes to the Mutual NDA creator at `/nda/`, with a form, live preview and PDF download (jsPDF). Logic in `frontend/lib/`, tests via `npm test` (vitest).
-- Backend: `backend/app/main.py` serves `/api/health` and mounts the static frontend; `backend/app/db.py` recreates the SQLite users table on startup. Tests via `uv run pytest`.
-- Docker: Node stage builds the frontend, uv Python stage runs uvicorn on port 8000; start scripts pass `.env` to the container.
+- Frontend: fake login at `/` (accepts any input, no backend call). Logic in `frontend/lib/`, tests via `npm test` (vitest).
+- Backend: `backend/app/main.py` serves the API and mounts the static frontend; `backend/app/db.py` recreates the SQLite users table on startup. Tests via `uv run pytest`.
+- Docker: Node stage builds the frontend, uv Python stage runs uvicorn on port 8000 with `catalog.json` and `templates/` alongside `backend/`; start scripts pass `.env` to the container.
 
-AI chat for the Mutual NDA is complete (KAN-7):
-- `/nda/` replaces the form with `NdaChat`: a freeform chat whose answers fill the live preview.
-- `POST /api/chat` (`backend/app/chat.py`) is stateless: it takes the message history and current NDA values, and returns a reply plus nullable field updates via Structured Outputs. The frontend merges non-null values with `applyUpdate` in `frontend/lib/chat.ts`.
-- `next dev` has no `/api` proxy; test the chat by serving `frontend/out` from FastAPI (`STATIC_DIR=../frontend/out uv run uvicorn app.main:app`).
+AI chat drafts every supported document (KAN-7, KAN-8):
+- `backend/app/documents.py` is the single source of document definitions: it reads catalog.json and each template at startup, extracts variables from the `<span class="*_link">` markers (party roles Provider/Customer/Partner/Company become signature columns) and folds the NDA cover page into one `mutual-nda` document. `GET /api/documents` serves them, including the markdown body.
+- `/draft/` holds `DocumentChat` and a live `DocumentPreview` (generic cover page, signature table, standard terms). Download PDF (`frontend/lib/pdf.ts`, jsPDF) unlocks once a document is chosen and both party companies are known.
+- `POST /api/chat` (`backend/app/chat.py`) is stateless: it takes the message history, `documentId` and current values, and returns a reply, the chosen `documentId` and field updates via Structured Outputs. Unsupported requests are redirected to the closest supported document by the prompt. Once a document is chosen, `remaining_sections` lists the open sections in interview order (both company names, each cover page variable, then each party's signer name, title and notice address) and the prompt asks for them one at a time; "not relevant" answers are recorded as "Not applicable". The page shows the same count via `sectionProgress` in `frontend/lib/documents.ts`. The frontend merges updates with `applyUpdate` in `frontend/lib/chat.ts`.
+- `next dev` has no `/api` proxy; test the app by serving `frontend/out` from FastAPI (`STATIC_DIR=../frontend/out uv run uvicorn app.main:app`).
 
-Not built yet: real sign up / sign in endpoints, and document types other than the Mutual NDA.
+Not built yet: real sign up / sign in endpoints.

@@ -11,7 +11,7 @@ export default function LoginPage() {
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          router.push("/nda/");
+          router.push("/draft/");
         }}
         className="w-full max-w-sm space-y-4 rounded-lg border-t-4 border-accent bg-white p-6 shadow"
       >

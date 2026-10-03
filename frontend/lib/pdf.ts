@@ -1,17 +1,11 @@
 import { jsPDF } from "jspdf";
-import {
-  buildStandardTerms,
-  confidentialityText,
-  formatDate,
-  NdaData,
-  termText,
-  toPlainText,
-} from "./nda";
+import { DocumentDef, Draft, toPlainText, variableValue } from "./documents";
 
 const MARGIN = 54;
 const LINE = 14;
+const INDENT = 14;
 
-export function generateNdaPdf(d: NdaData): jsPDF {
+export function generateDocumentPdf(document: DocumentDef, draft: Draft): jsPDF {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const width = doc.internal.pageSize.getWidth() - MARGIN * 2;
   const bottom = doc.internal.pageSize.getHeight() - MARGIN;
@@ -23,46 +17,39 @@ export function generateNdaPdf(d: NdaData): jsPDF {
       y = MARGIN;
     }
   };
-  const text = (value: string, opts: { size?: number; bold?: boolean; gap?: number } = {}) => {
+  const text = (value: string, opts: { size?: number; bold?: boolean; gap?: number; indent?: number } = {}) => {
+    const left = MARGIN + (opts.indent ?? 0);
     doc.setFont("helvetica", opts.bold ? "bold" : "normal");
     doc.setFontSize(opts.size ?? 10.5);
-    for (const line of doc.splitTextToSize(value, width) as string[]) {
+    for (const line of doc.splitTextToSize(value, width - (opts.indent ?? 0)) as string[]) {
       ensure(LINE);
-      doc.text(line, MARGIN, y);
+      doc.text(line, left, y);
       y += LINE;
     }
     y += opts.gap ?? 4;
   };
 
-  text("Mutual Non-Disclosure Agreement", { size: 18, bold: true, gap: 10 });
+  text(document.name, { size: 18, bold: true, gap: 10 });
   text("Cover Page", { size: 13, bold: true });
   text(
-    "This Mutual Non-Disclosure Agreement (the “MNDA”) consists of: (1) this Cover Page and (2) the Common Paper Mutual NDA Standard Terms Version 1.0 (“Standard Terms”). Any modifications of the Standard Terms should be made on the Cover Page, which will control over conflicts with the Standard Terms.",
+    `This ${document.name} consists of this Cover Page and the Common Paper standard terms that follow. The values on this Cover Page define the capitalized terms used in the standard terms and control over any conflict with them.`,
     { gap: 10 },
   );
+  for (const name of document.variables) {
+    text(name, { bold: true, gap: 0 });
+    text(variableValue(draft, name), { gap: 8 });
+  }
+  text(`By signing this Cover Page, each party agrees to enter into this ${document.name}.`, { gap: 10 });
 
-  const field = (label: string, value: string) => {
-    text(label, { bold: true, gap: 0 });
-    text(value.trim() || "—", { gap: 8 });
-  };
-  field("Purpose", d.purpose);
-  field("Effective Date", formatDate(d.effectiveDate));
-  field("MNDA Term", termText(d));
-  field("Term of Confidentiality", confidentialityText(d));
-  field("Governing Law", d.governingLaw);
-  field("Jurisdiction", d.jurisdiction);
-  field("MNDA Modifications", d.modifications);
-
-  text("By signing this Cover Page, each party agrees to enter into this MNDA as of the Effective Date.", { gap: 10 });
-
+  const [role1, role2] = document.parties;
   const colW = width / 3;
   const rows: [string, string, string][] = [
-    ["", "PARTY 1", "PARTY 2"],
+    ["", role1.toUpperCase(), role2.toUpperCase()],
     ["Signature", "", ""],
-    ["Print Name", d.party1.name, d.party2.name],
-    ["Title", d.party1.title, d.party2.title],
-    ["Company", d.party1.company, d.party2.company],
-    ["Notice Address", d.party1.noticeAddress, d.party2.noticeAddress],
+    ["Print Name", draft.party1.name, draft.party2.name],
+    ["Title", draft.party1.title, draft.party2.title],
+    ["Company", draft.party1.company, draft.party2.company],
+    ["Notice Address", draft.party1.noticeAddress, draft.party2.noticeAddress],
     ["Date", "", ""],
   ];
   for (const [i, row] of rows.entries()) {
@@ -80,11 +67,11 @@ export function generateNdaPdf(d: NdaData): jsPDF {
 
   doc.addPage();
   y = MARGIN;
-  text("Standard Terms", { size: 16, bold: true, gap: 10 });
-  const body = toPlainText(buildStandardTerms(d))
-    .replace(/^# Standard Terms\s*/, "")
-    .split(/\n\s*\n/);
-  for (const para of body) text(para.trim(), { gap: 8 });
+  for (const line of toPlainText(document.body).split("\n")) {
+    const heading = line.match(/^#+\s+(.*)/);
+    if (heading) text(heading[1], { size: 16, bold: true, gap: 10 });
+    else if (line.trim()) text(line.trim(), { indent: (line.search(/\S/) / 4) * INDENT, gap: 6 });
+  }
 
   return doc;
 }
