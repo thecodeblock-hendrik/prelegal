@@ -14,7 +14,7 @@ When instructed to build a feature:
 1. Use your Atlassian tools to read the feature instructions from Jira
 2. Develop the feature - do not skip any step from the feature-dev 7 step process
 3. Thoroughly test the feature with unit tests and integration tests and fix any issues
-4. Submit a PR using your github tools
+4. Submit a PR using your github tools (the `gh` CLI is not installed; use the GitHub MCP `create_pull_request`)
 
 ## AI design
 
@@ -57,6 +57,8 @@ All colours, font sizes, radii and shadows are design tokens in `frontend/app/gl
 
 ## Implementation status
 
+KAN-4 to KAN-11 are complete and merged to main.
+
 v1 foundation is complete (KAN-4, KAN-5, KAN-6):
 - `templates/` holds the Common Paper markdown templates listed in catalog.json.
 - Frontend: logic in `frontend/lib/` as pure functions, tests via `npm test` (vitest, node environment, no component tests).
@@ -78,6 +80,11 @@ Accounts, document history and polish (KAN-9):
 - The disclaimer (`DISCLAIMER` in `lib/documents.ts`) shows above the preview and on the dashboard, and the PDF repeats it under the title with a footer on every page.
 - Styling: see Color Scheme and UI above. Shared classes are defined with `@utility` because Tailwind 4 cannot `@apply` plain classes.
 
+Corporate UI refresh (KAN-10):
+- Visual only: no changes to routes, API calls or the `section-*` ids that drive preview scrolling. Tokens and utilities are listed in Color Scheme and UI above; the plan and before/after notes are in UI.md.
+- `ConfirmDialog` (native `<dialog>`) replaces `window.confirm` for deletes. Inter is self-hosted, so the build needs no Google Fonts download.
+- Before and after screenshots at 1920, 1366, 768 and 375px are in `docs/screenshots/KAN-10/`.
+
 Persistent database (KAN-11):
 - Data survives restarts in the `prelegal-data` volume; the start scripts mount it and the stop scripts never remove it. Reset with `docker volume rm prelegal-data`.
 - Schema changes go in a new `backend/app/migrations/NNN_name.sql`; never edit an applied one. `migrate()` runs each file newer than `PRAGMA user_version` in its own transaction and bumps the version.
@@ -86,3 +93,9 @@ Persistent database (KAN-11):
 - Handlers take the `Db` dependency: one connection per request, shared with `current_user`, committed or rolled back and closed. It uses `scope="function"` so the commit happens before the response is sent.
 - Migration files must not contain `BEGIN`/`COMMIT`; `migrate()` wraps each one.
 - Sessions store only the SHA-256 of the cookie token and expire after 7 days; expired rows are deleted on startup and sign in.
+
+## Known gaps before public hosting
+
+- The session cookie has no `Secure` flag; add `secure=True` in `start_session` once the app is served over HTTPS.
+- Run a single instance on a host with a persistent disk mounted at `/data` (e.g. Fly.io, Railway, a VPS). Serverless containers without a disk would lose the database, and SQLite cannot be shared between instances.
+- No automated database backups yet.
