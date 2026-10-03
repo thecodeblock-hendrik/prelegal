@@ -13,5 +13,6 @@ COPY catalog.json /app/catalog.json
 COPY templates /app/templates
 COPY backend/app ./app
 COPY --from=frontend /build/frontend/out ./static
+ENV DB_PATH=/data/prelegal.db
 EXPOSE 8000
 CMD ["uv", "run", "--no-sync", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

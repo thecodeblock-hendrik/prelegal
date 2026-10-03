@@ -27,7 +27,7 @@ There is an OPENROUTER_API_KEY in the .env file in the project root.
 The entire project is packaged into a single multi-stage Docker container.  
 The backend is in backend/ and is a uv project, using FastAPI.  
 The frontend is in frontend/ and is a Next.js app, statically exported and served by FastAPI.  
-The database uses SQLite and is created from scratch each time the container starts, with a users table for sign up and sign in.  
+The database uses SQLite and persists in the `prelegal-data` Docker volume (`DB_PATH=/data/prelegal.db`), with users, sessions and drafts tables. Schema changes are versioned migrations.  
 There are scripts in scripts/ for:  
 ```bash
 # Mac
@@ -60,7 +60,7 @@ All colours, font sizes, radii and shadows are design tokens in `frontend/app/gl
 v1 foundation is complete (KAN-4, KAN-5, KAN-6):
 - `templates/` holds the Common Paper markdown templates listed in catalog.json.
 - Frontend: logic in `frontend/lib/` as pure functions, tests via `npm test` (vitest, node environment, no component tests).
-- Backend: `backend/app/main.py` serves the API and mounts the static frontend; `backend/app/db.py` recreates the SQLite users table on startup. Tests via `uv run pytest`.
+- Backend: `backend/app/main.py` serves the API and mounts the static frontend; `backend/app/db.py` migrates the SQLite database on startup. Tests via `uv run pytest`.
 - Docker: Node stage builds the frontend, uv Python stage runs uvicorn on port 8000 with `catalog.json` and `templates/` alongside `backend/`; start scripts pass `.env` to the container.
 
 AI chat drafts every supported document (KAN-7, KAN-8):
@@ -72,8 +72,17 @@ AI chat drafts every supported document (KAN-7, KAN-8):
 - `next dev` has no `/api` proxy; test the app by serving `frontend/out` from FastAPI (`STATIC_DIR=../frontend/out uv run uvicorn app.main:app`).
 
 Accounts, document history and polish (KAN-9):
-- `backend/app/auth.py`: `/api/auth/signup|signin|signout|me`. Passwords hashed with stdlib scrypt; sign in creates a row in `sessions` and sets an HttpOnly `session` cookie (no `Secure` flag, the app runs on http). Protected routes take the `UserId` dependency; `/api/chat` and `/api/drafts` require it, `/api/health` and `/api/documents` stay public. Users, sessions and drafts are wiped on restart like the rest of the database.
+- `backend/app/auth.py`: `/api/auth/signup|signin|signout|me`. Passwords hashed with stdlib scrypt; sign in creates a row in `sessions` and sets an HttpOnly `session` cookie (no `Secure` flag, the app runs on http). Protected routes take the `UserId` dependency; `/api/chat` and `/api/drafts` require it, `/api/health` and `/api/documents` stay public.
 - `backend/app/drafts.py`: CRUD under `/api/drafts`, scoped to the signed in user (another user's draft is a 404). A draft stores `documentId`, `fields` and `messages` as JSON, using `ChatRequest` as the request body; the list omits messages.
 - Frontend: `/` signs in or up, `/documents/` is the dashboard (reopen, delete via `ConfirmDialog`), `/draft/?id=N` reopens a draft. `DocumentChat` calls `onTurn` after each reply and keeps input locked until the page has saved, so the first save cannot be duplicated. `AppShell` guards signed in pages via `GET /api/auth/me`, and `lib/api.ts` sends any other 401 back to `/`.
 - The disclaimer (`DISCLAIMER` in `lib/documents.ts`) shows above the preview and on the dashboard, and the PDF repeats it under the title with a footer on every page.
 - Styling: see Color Scheme and UI above. Shared classes are defined with `@utility` because Tailwind 4 cannot `@apply` plain classes.
+
+Persistent database (KAN-11):
+- Data survives restarts in the `prelegal-data` volume; the start scripts mount it and the stop scripts never remove it. Reset with `docker volume rm prelegal-data`.
+- Schema changes go in a new `backend/app/migrations/NNN_name.sql`; never edit an applied one. `migrate()` runs each file newer than `PRAGMA user_version` in its own transaction and bumps the version.
+- Tables are `STRICT` with `ON DELETE CASCADE` foreign keys, `COLLATE NOCASE` emails and `json_valid` checks on draft JSON. Timestamps come from `utc_now()` (fixed-width UTC ISO-8601, so they compare as text).
+- `connect()` applies `foreign_keys`, `journal_mode = WAL`, `busy_timeout` and `synchronous` on every connection. It uses `isolation_level="IMMEDIATE"`, not `autocommit=False`: a deferred `BEGIN` that reads then writes fails at once with `SQLITE_BUSY_SNAPSHOT` under concurrent writes (seen in a load test). `check_same_thread=False` because FastAPI's threadpool may open and use a request's connection on different threads.
+- Handlers take the `Db` dependency: one connection per request, shared with `current_user`, committed or rolled back and closed. It uses `scope="function"` so the commit happens before the response is sent.
+- Migration files must not contain `BEGIN`/`COMMIT`; `migrate()` wraps each one.
+- Sessions store only the SHA-256 of the cookie token and expire after 7 days; expired rows are deleted on startup and sign in.

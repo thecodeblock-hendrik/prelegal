@@ -12,7 +12,7 @@ scripts/start-mac.sh     # or start-linux.sh / start-windows.ps1
 scripts/stop-mac.sh      # or stop-linux.sh / stop-windows.ps1
 ```
 
-The app is served at http://localhost:8000. The SQLite database is recreated on every start.
+The app is served at http://localhost:8000. The SQLite database persists in the `prelegal-data` Docker volume; reset it with `docker volume rm prelegal-data`.
 
 ## Develop
 
